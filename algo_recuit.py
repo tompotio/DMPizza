@@ -29,7 +29,10 @@ class Ingredients:
     def get_meilleurs_ingredients(self, n):
         ordre_decroissant = sorted(self.ingredients.items(), key=lambda x: x[1], reverse=True)
         return [ingredient for ingredient, _ in ordre_decroissant[:n]]
-
+class recuitSimule:
+    def __init__(self,solution,temperature) -> None:
+        self.solution = solution
+        self.temperature = temperature
 N = 0 # Nombre de clients
 Imax = 0 # Nombre d'ingredients
 
