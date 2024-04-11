@@ -1,5 +1,7 @@
 import random as rd 
 import sys 
+import numpy as np
+import math
 
 # Classe client avec les infos du client : 
 # Les ingrédients qu'il aime, les ingrédients qu'il n'aime pas.
@@ -24,17 +26,12 @@ class Ingredients:
     def ingredient_is_liked(self, ingredient):
         self.ingredients[ingredient] += 1
 
-
     def get_meilleurs_ingredients(self, n):
         ordre_decroissant = sorted(self.ingredients.items(), key=lambda x: x[1], reverse=True)
         return [ingredient for ingredient, _ in ordre_decroissant[:n]]
 
-# Initialisation.
-N = 0
-T0 = 1000000
-tau = 1e4
-beta = 1e-1
-k = 0
+N = 0 # Nombre de clients
+Imax = 0 # Nombre d'ingredients
 
 # Liste des ingrédients et des clients.
 ingredients = Ingredients()
@@ -47,7 +44,7 @@ if len(sys.argv) != 2:
 
 filename = sys.argv[1]
 
-# On le fichier pour récupérer les informations.
+# On parcourt le fichier pour récupérer les informations.
 with open(filename,'r') as fichier: 
     # Nombre de clients.
     N = int(fichier.readline())
@@ -60,7 +57,8 @@ with open(filename,'r') as fichier:
         ingredients_aimes = ligne_1[1:]
 
         # Rajoute l'ingrédient dans la liste des ingrédients, et comme il est aimé par le client, on incrémente.
-        for j in range(len(ligne_1)):
+        for j in range(1, len(ligne_1)):
+            # On ignore le premier élément de la ligne.
             ingredients.add_ingredient(ligne_1[j])
             ingredients.ingredient_is_liked(ligne_1[j])
 
@@ -69,7 +67,8 @@ with open(filename,'r') as fichier:
         nb_aliments_destes = int(ligne_2[0])
         ingredients_detestes = ligne_2[1:]
 
-        for j in range(len(ligne_2)):
+        for j in range(1, len(ligne_2)):
+            # On ignore le premier élément de la ligne.
             ingredients.add_ingredient(ligne_2[j])
 
         # Crée un nouveau client avec les informations.
@@ -77,12 +76,14 @@ with open(filename,'r') as fichier:
         clients.append(client)
 
         # Print test.
-        print("Client {i+1}:")
-        print("Ingrédients aimés : ",ingredients_aimes)
-        print("Ingredients mal aimés : ", ingredients_detestes)
+        #print(f"Client {i+1}:")
+        #print("Ingrédients aimés : ",ingredients_aimes)
+        #print("Ingredients mal aimés : ", ingredients_detestes)
+
+Imax = len(ingredients.ingredients)
 
 # Calcul de la fonction d'évalution de la solution donnée.
-def fonction_evaluation(solution):
+def evaluation_solution(solution):
     n = N # Initialise un petit n qui prend le nombre de clients.
 
     for client in clients: 
@@ -99,6 +100,25 @@ def fonction_evaluation(solution):
 
     return n
 
-solution = ["mushrooms", "tomatoes", "cheese", "peppers"]
+def taille_solution_initiale():
+    p = np.linspace(1, 0, Imax, dtype=float)
+    p = p / np.sum(p)
+    return np.random.choice(range(1, Imax + 1), p=p)
 
-print("la solution a une valeur = " + str(fonction_evaluation(solution)))
+def exp(delta, T):
+    return math.exp(-delta/T)
+
+# Génération d'une solution initiale.
+# On demande à l'objet de la classe Ingredients, de renvoyer les ingredients,
+# les plus appréciés. 
+# On demande un nombre 
+solution = ingredients.get_meilleurs_ingredients(taille_solution_initiale())
+
+print(solution)
+
+# Paramètres variants
+T0 = 1000000
+tau = 1e4
+beta = 1e-1
+k = 0
+
