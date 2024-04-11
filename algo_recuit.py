@@ -29,6 +29,38 @@ class Ingredients:
     def get_meilleurs_ingredients(self, n):
         ordre_decroissant = sorted(self.ingredients.items(), key=lambda x: x[1], reverse=True)
         return [ingredient for ingredient, _ in ordre_decroissant[:n]]
+    
+class RecuitSimule:
+    def __init__(self,solution,temperature,ingredients) -> None:
+        self.solution = solution
+        self.temperature = temperature
+        self.ingredients = ingredients
+
+    def generateNeighbors(seq):
+        length = len(seq)
+        start = rd.randint(0, length - 2)  # Point de départ aléatoire
+        end = rd.randint(start+1, length - 1)
+        seq[start:end + 1] = reversed(seq[start:end + 1])
+        return seq
+    
+    def find_optimal_solution():
+        while T > Tmin:
+            solution_candidate = mouvement()
+            nb_clients_sol_candidate = evaluation_solution(solution_candidate)
+
+            if nb_clients_sol_courante < nb_clients_sol_candidate:
+                nb_clients_sol_courante = nb_clients_sol_candidate
+            else: 
+                dE = nb_clients_sol_courante - nb_clients_sol_candidate
+                
+
+            # Décroissement de la température suivant une loi exponentielle.
+            T = T0 * np.exp(-t/tau)
+    
+    def is_accepted(Xca,Xco,temperature):
+        proba = exp((Xca-Xco)/temperature)
+        test = rd.uniform(0.0,1.0)
+        return proba>test
 
 N = 0 # Nombre de clients
 Imax = 0 # Nombre d'ingredients
@@ -130,19 +162,8 @@ beta = 1e-4
 t = 0
 
 # Algorithme du recuit simulé.
-while T > Tmin:
-    solution_candidate = mouvement()
-    nb_clients_sol_candidate = evaluation_solution(solution_candidate)
+algo_recuit = RecuitSimule()
 
-    if nb_clients_sol_courante < nb_clients_sol_candidate:
-        nb_clients_sol_courante = nb_clients_sol_candidate
-    else: 
-        dE = nb_clients_sol_courante
-
-
-
-    # Décroissement de la température suivant une loi exponentielle.
-    T = T0 * np.exp(-t/tau)
 
 
 
