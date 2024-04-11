@@ -17,10 +17,12 @@ class Client:
 class Ingredients:
     def __init__(self):
         self.ingredients = {}
+        self.nom_ingr = []
 
     def add_ingredient(self, ingredient):
         if(not self.ingredients in self.ingredients.values()): 
             self.ingredients[ingredient] = 0
+            self.nom_ingr.append(ingredient)
 
     # Incrémente le compteur de client qui aime cet ingrédient.
     def ingredient_is_liked(self, ingredient):
@@ -28,10 +30,16 @@ class Ingredients:
 
     def get_meilleurs_ingredients(self, n):
         ordre_decroissant = sorted(self.ingredients.items(), key=lambda x: x[1], reverse=True)
-        return [ingredient for ingredient, _ in ordre_decroissant[:n]]
-    
-class RecuitSimule:
+        seq = [0] * len(self.ingredients) # instancie la séquence à 0 (bits)
+        meilleurs_ingredients = [ingredient for ingredient, _ in ordre_decroissant[:n]]
+        # Met l'indexe correspondant de la séquence de nb_ingredients bits à 1.
+        # Les bits nuls veulent dire que l'on ne prend pas cet ingrédient.
+        for ingredient in meilleurs_ingredients:
+            index_ingredient = list(self.ingredients.keys()).index(ingredient)
+            seq[index_ingredient] = 1
+        return seq
 
+class RecuitSimule:
     def __init__(self,solution,ingredients) -> None:
         self.solution = solution
         self.solutionCourante = solution
@@ -40,31 +48,36 @@ class RecuitSimule:
         self.Imax = len(ingredients.ingredients)
 
         # Paramètres variants.
-        self.T0 = self.Imax * 2
-        self.T = self.T0
-        self.Tmin = self.Imax
+        self.T = 0.2 * self.nb_clients_sol_courante
         self.tau = 1e4
-        self.beta = 1e-4
 
-    def generateNeighbor(self):
+    def genereVoisin(self):
         seq = self.solutionCourante
         length = len(seq)
         start = 0
         end = length
-        if (length >= 3):
+        if (length > 2):
             start = rd.randint(0, length - 2)  # Point de départ aléatoire
             end = rd.randint(start+1, length - 1)
         seq[start:end + 1] = reversed(seq[start:end + 1])
         return seq
     
+    def traduireSequence(self,seq):
+        tab = []
+        for i in range(len(seq)):
+            if (seq[i] == 1):
+                tab.append(self.ingredients.nom_ingr[i])
+        return tab
+    
     # Calcul de la fonction d'évalution de la solution donnée.
-    def evaluation_solution(self, solution):
+    def evaluation_solution(self, seq):
         n = N # Initialise un petit n qui prend le nombre de clients.
+        solution_traduite = self.traduireSequence(seq)   
 
         for client in clients:
             nbi = 0 # Nombre d'ingredients que le client aime, dans la solution.
             ok = True
-            for ingredient in solution:
+            for ingredient in solution_traduite:
                 if (ingredient in client.ingredient_aimes):
                     nbi +=1
                 if (ingredient in client.ingredient_detestes): 
@@ -75,25 +88,30 @@ class RecuitSimule:
 
         return n
     
-    def find_optimal_solution(self):
+    def getSolutionOptimale(self):
         i = 0
-        while self.T > self.Tmin:
-            solution_candidate = self.generateNeighbor()
-            nb_clients_sol_candidate = self.evaluation_solution(solution_candidate)
+        while i < self.Imax:
+            seq_candidate = self.genereVoisin()
+            nb_clients_sol_candidate = self.evaluation_solution(seq_candidate)
 
-            if self.nb_clients_sol_courante < nb_clients_sol_candidate:
+            if self.nb_clients_sol_courante <= nb_clients_sol_candidate:
                 self.nb_clients_sol_courante = nb_clients_sol_candidate
-                self.solutionCourante = solution_candidate
+                self.solutionCourante = seq_candidate
             else:
+                probaTiree = rd.random()
                 dE = self.nb_clients_sol_courante - nb_clients_sol_candidate
-                if self.beta < np.exp(-dE/self.T):
-                    self.solutionCourante = solution_candidate
+                print("proba tirée =",probaTiree)
+                print("dE",dE)
+                print("exp(x) = ",np.exp(-dE/self.T))
+                if probaTiree < np.exp(-dE/self.T):
+                    self.solutionCourante = seq_candidate
                     self.nb_clients_sol_courante = nb_clients_sol_candidate
 
             # Abaissement de la température suivant une loi exponentielle.
-            self.T = self.T0 * np.exp(-i/self.tau)
+            if (i % 5 == 0):
+                self.T = self.T * 0.9
             i+=1
-        return self.solutionCourante
+        return self.traduireSequence(self.solutionCourante)
     
     def is_accepted(Xca,Xco,temperature):
         proba = np.exp((Xca-Xco)/temperature)
@@ -145,11 +163,6 @@ with open(filename,'r') as fichier:
         client = Client(ingredients_aimes,ingredients_detestes)
         clients.append(client)
 
-        # Print test.
-        #print(f"Client {i+1}:")
-        #print("Ingrédients aimés : ",ingredients_aimes)
-        #print("Ingredients mal aimés : ", ingredients_detestes)
-
 def taille_solution_initiale():
     p = np.linspace(1, 0, len(ingredients.ingredients), dtype=float)
     p = p / np.sum(p)
@@ -158,17 +171,26 @@ def taille_solution_initiale():
 # Génération d'une solution initiale.
 # On demande à l'objet de la classe Ingredients, de renvoyer les ingredients,
 # les plus appréciés. 
-# On demande un nombre 
-solution_initiale = ingredients.get_meilleurs_ingredients(taille_solution_initiale())
+# Renvoie une séquence :
+seq_initiale = ingredients.get_meilleurs_ingredients(taille_solution_initiale())
 
 # Algorithme du recuit simulé.
-algo_recuit = RecuitSimule(solution_initiale,ingredients)
-sol = algo_recuit.find_optimal_solution()
-nb =0
-while((algo_recuit.nb_clients_sol_courante < 5) and (nb < 1000)):
-    sol = algo_recuit.find_optimal_solution()
-    nb+=1
+algo_recuit = RecuitSimule(seq_initiale,ingredients)
+sol = algo_recuit.getSolutionOptimale()
 
-print("nb = ", nb)
-print("solution = ",sol)
-print("val sol =",algo_recuit.nb_clients_sol_courante)
+tab = []
+ok = True
+for elem in sol:
+    if elem in tab:
+        print("UN DOUBLON !!!! à l'ingrédient : ", elem)
+        ok = False
+        break
+    else:
+        tab.append(elem)
+
+if (ok):
+    with open("resultat.txt", 'w') as fichier:
+        for element in sol:
+            fichier.write(str(element) + '\n')
+        fichier.write("La valeur de la solution = " + str(algo_recuit.nb_clients_sol_courante))
+
