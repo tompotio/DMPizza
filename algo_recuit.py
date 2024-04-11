@@ -86,7 +86,7 @@ Imax = len(ingredients.ingredients)
 def evaluation_solution(solution):
     n = N # Initialise un petit n qui prend le nombre de clients.
 
-    for client in clients: 
+    for client in clients:
         nbi = 0 # Nombre d'ingredients que le client aime, dans la solution.
         ok = True
         for ingredient in solution:
@@ -108,17 +108,46 @@ def taille_solution_initiale():
 def exp(delta, T):
     return math.exp(-delta/T)
 
+def mouvement():
+    return
+
 # Génération d'une solution initiale.
 # On demande à l'objet de la classe Ingredients, de renvoyer les ingredients,
 # les plus appréciés. 
 # On demande un nombre 
-solution = ingredients.get_meilleurs_ingredients(taille_solution_initiale())
+solution_initiale = ingredients.get_meilleurs_ingredients(taille_solution_initiale())
+solution_courante = solution_initiale
+nb_clients_sol_courante = evaluation_solution(solution_courante)
 
-print(solution)
+print(solution_initiale)
 
-# Paramètres variants
-T0 = 1000000
+# Paramètres variants.
+T0 = Imax * 2
+T = T0
+Tmin = 1e-1
 tau = 1e4
-beta = 1e-1
-k = 0
+beta = 1e-4
+t = 0
+
+# Algorithme du recuit simulé.
+while T > Tmin:
+    solution_candidate = mouvement()
+    nb_clients_sol_candidate = evaluation_solution(solution_candidate)
+
+    if nb_clients_sol_courante < nb_clients_sol_candidate:
+        nb_clients_sol_courante = nb_clients_sol_candidate
+    else: 
+        dE = nb_clients_sol_courante
+
+
+
+    # Décroissement de la température suivant une loi exponentielle.
+    T = T0 * np.exp(-t/tau)
+
+
+
+
+
+
+
 
