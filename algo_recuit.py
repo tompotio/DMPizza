@@ -30,9 +30,23 @@ class Ingredients:
         ordre_decroissant = sorted(self.ingredients.items(), key=lambda x: x[1], reverse=True)
         return [ingredient for ingredient, _ in ordre_decroissant[:n]]
 class recuitSimule:
-    def __init__(self,solution,temperature) -> None:
+    def __init__(self,solution,temperature,ingredients) -> None:
         self.solution = solution
         self.temperature = temperature
+        self.ingredients = ingredients
+    def generateNeighbors(seq):
+        length = len(seq)
+        start = random.randint(0, length - 2)  # Point de départ aléatoire
+        end = random.randint(start+1, length - 1)
+        seq[start:end + 1] = reversed(seq[start:end + 1])
+        return seq
+    def find_optimal_solution():
+        return
+    def is_accepted(Xca,Xco,temperature):
+        proba = exp((Xca-Xco)/temperature)
+        test = rd.uniform(0.0,1.0)
+        return proba>test
+
 N = 0 # Nombre de clients
 Imax = 0 # Nombre d'ingredients
 
