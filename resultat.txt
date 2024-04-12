@@ -1,4 +1,0 @@
-cheese
-pineapple
-tomatoes
-La valeur de la solution = 1

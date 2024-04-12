@@ -1,7 +1,10 @@
 import random as rd 
 import sys 
 import numpy as np
-import math
+
+#   Pour optimiser le code :
+#   Il faut enregistrer les ingredients dans le client sous forme de séquence.
+#   Les ingrédients qui ne sont aimés par personne et détestés par d'autres, n'ont pas besoin de figurer dans le test de la solution.
 
 # Classe client avec les infos du client : 
 # Les ingrédients qu'il aime, les ingrédients qu'il n'aime pas.
@@ -20,7 +23,7 @@ class Ingredients:
         self.nom_ingr = []
 
     def add_ingredient(self, ingredient):
-        if(not self.ingredients in self.ingredients.values()): 
+        if(not (ingredient in self.nom_ingr)): 
             self.ingredients[ingredient] = 0
             self.nom_ingr.append(ingredient)
 
@@ -49,17 +52,14 @@ class RecuitSimule:
 
         # Paramètres variants.
         self.T = 0.2 * self.nb_clients_sol_courante
+        self.Tmin = 1e-4
+
         self.tau = 1e4
 
     def genereVoisin(self):
         seq = self.solutionCourante
-        length = len(seq)
-        start = 0
-        end = length
-        if (length > 2):
-            start = rd.randint(0, length - 2)  # Point de départ aléatoire
-            end = rd.randint(start+1, length - 1)
-        seq[start:end + 1] = reversed(seq[start:end + 1])
+        i = rd.randint(0, len(seq) - 1)
+        seq[i] = 1 - seq[i]
         return seq
     
     def traduireSequence(self,seq):
@@ -90,7 +90,7 @@ class RecuitSimule:
     
     def getSolutionOptimale(self):
         i = 0
-        while i < self.Imax:
+        while i < self.Imax and self.T > self.Tmin:
             seq_candidate = self.genereVoisin()
             nb_clients_sol_candidate = self.evaluation_solution(seq_candidate)
 
@@ -100,9 +100,9 @@ class RecuitSimule:
             else:
                 probaTiree = rd.random()
                 dE = self.nb_clients_sol_courante - nb_clients_sol_candidate
-                print("proba tirée =",probaTiree)
-                print("dE",dE)
-                print("exp(x) = ",np.exp(-dE/self.T))
+                #print("proba tirée =",probaTiree)
+                #print("dE",dE)
+                #print("exp(x) = ",np.exp(-dE/self.T))
                 if probaTiree < np.exp(-dE/self.T):
                     self.solutionCourante = seq_candidate
                     self.nb_clients_sol_courante = nb_clients_sol_candidate
@@ -111,6 +111,7 @@ class RecuitSimule:
             if (i % 5 == 0):
                 self.T = self.T * 0.9
             i+=1
+
         return self.traduireSequence(self.solutionCourante)
     
     def is_accepted(Xca,Xco,temperature):
@@ -172,7 +173,20 @@ def taille_solution_initiale():
 # On demande à l'objet de la classe Ingredients, de renvoyer les ingredients,
 # les plus appréciés. 
 # Renvoie une séquence :
-seq_initiale = ingredients.get_meilleurs_ingredients(taille_solution_initiale())
+
+# Génère une solution aléatoire.
+#seq_initiale = ingredients.get_meilleurs_ingredients(taille_solution_initiale())
+
+seq = []
+with open("resultat.txt", 'r') as f:
+    for ligne in f:
+        ingredient = ligne.strip()
+        seq.append(ingredient)
+
+seq_initiale = [0] * len(ingredients.nom_ingr)
+for ingredient in seq:
+    index_ingredient = list(ingredients.ingredients.keys()).index(ingredient)
+    seq_initiale[index_ingredient] = 1
 
 # Algorithme du recuit simulé.
 algo_recuit = RecuitSimule(seq_initiale,ingredients)
@@ -188,9 +202,8 @@ for elem in sol:
     else:
         tab.append(elem)
 
-if (ok):
-    with open("resultat.txt", 'w') as fichier:
-        for element in sol:
-            fichier.write(str(element) + '\n')
-        fichier.write("La valeur de la solution = " + str(algo_recuit.nb_clients_sol_courante))
+with open("resultat.txt", 'w') as fichier:
+    for element in sol:
+        fichier.write(str(element) + '\n')
+    print("La valeur de la solution = " + str(algo_recuit.nb_clients_sol_courante))
 
