@@ -14,6 +14,8 @@ class vecteur:
         self.solution = solution
     def get_score(self):
         return self.score
+    def set_score(self,score):
+        self.score=score
     
 class Client: 
     def __init__(self, ingredients_aimes, ingredients_detestes):
@@ -39,19 +41,19 @@ class Client:
             return True
         return False
 class algorithme_genetique:
-    def __init__(self) -> None:
+    def __init__(self,SolutionInitial = []) -> None:
         self.solution = []
         self.client = []
         self.nbclient = 0
         self.ingredients = {}
-        self.taille_population = 0
+        self.taille_population = 100
         self.nb_generation = 100
-        self.nbTour = 10
+        self.nbTour = 5
         self.generation = []
-        self.nb_croisement = 100
-        self.chance_mutation = 0.5
-        self.solutionFinal = []
-        self.scoreFinal =0
+        self.nb_croisement = 200
+        self.chance_mutation = 0.05
+        self.solutionFinal = SolutionInitial
+        self.scoreFinal = 0
     def get_score_final(self):
         return self.scoreFinal
     def get_solution_final(self):
@@ -82,26 +84,21 @@ class algorithme_genetique:
                 self.client.append(client)
             self.traduire_aliment_client()
             self.taille_population = 150
-            self.nbSolutionInitial = min(10000,pow(2,len(self.ingredients)))
+            self.nbSolutionInitial = 1000000 if len(self.ingredients) > 13 else pow(2,len(self.ingredients))
             self.nbClient = N
             self.generate_solution(self.nbSolutionInitial)
-    def generate_sequence(self,neededDigits):
+            self.solution = sorted(self.solution, key=lambda x: x.get_score(),reverse=True)[:250]
+   
+    def generate_solution(self,taille_population):
+        neededDigits = len(self.ingredients)
         unique_lists = set()
-        list = []
         while len(unique_lists) < self.nbSolutionInitial:
             new_list = [choice([0, 1]) for _ in range(neededDigits)]
             new_tuple = tuple(new_list)
-            if  new_tuple not in unique_lists:
+            if new_tuple not in unique_lists:
                 unique_lists.add(new_tuple)
-                list.append(new_list)
-        return list
-    def generate_solution(self,taille_population):
-        neededDigits = len(self.ingredients)
-        for i in range(taille_population):
-            sequence =self.generate_sequence(neededDigits)
-            vecteur = self.calculer_score(sequence)
-            self.solution.append(vecteur)     
-        print("fini") 
+                vecteur = self.calculer_score(new_list)
+                self.solution.append(vecteur)
     def calculer_score(self,solutions):
         score = self.nbClient
         ingredients = set()
@@ -126,9 +123,11 @@ class algorithme_genetique:
     def traduire_solution(self):
         i = 0
         ingredient_list = []
+        
         for ingredients in self.ingredients.keys():
             if self.solutionFinal[i] == 1:
                 ingredient_list.append(ingredients)
+            i+=1
         return ingredient_list
     def tournamentSelection(self):
         populationSelection = [] # Création de notre variable de sortie
@@ -144,18 +143,32 @@ class algorithme_genetique:
     
         populationSelection = sorted(populationSelection, key=lambda x: x.get_score(),reverse=True) # Trier en fonction du fitness
         a = populationSelection[:] # Faire une copie de la variable de sortie
-        
         self.generation=a
+    def getMeileurSolution():
+        return self.solution[:50]
     def croisement(self):
         enfants = []
         for i in range(self.nb_croisement):
             parent1 = self.generation[randrange(len(self.generation))].get_solution()
             parent2 = self.generation[randrange(len(self.generation))].get_solution()
-            enfant1 = parent1[0:len(parent1)//2] + parent2[len(parent1)//2 + 1:len(parent2)-1]
+
+            longueur_tab1 = len(parent1)
+            longueur_tab2 = len(parent2)
+    
+            premiere_moitie_tab1 = parent1[:longueur_tab1 // 2]
+            deuxieme_moitie_tab1 = parent1[longueur_tab1 // 2:]
+            premiere_moitie_tab2 = parent2[:longueur_tab2//2]
+            deuxieme_moitie_tab2 = parent2[longueur_tab2 // 2:]
+            
+
+            enfant1 = premiere_moitie_tab1 + deuxieme_moitie_tab2
             enfants.append(self.calculer_score(enfant1))
-            enfant2 = parent2[0:len(parent2)//2] + parent1[len(parent2)//2 +1 : len(parent1)-1]
+            enfant2 = premiere_moitie_tab2 + deuxieme_moitie_tab1
             enfants.append(self.calculer_score(enfant2))
-        return enfants
+          
+        self.generation.extend(enfants)
+        self.mutation()
+        self.generation = populationSelection = sorted(self.generation, key=lambda x: x.get_score(),reverse=True)
     def mutation(self):
         for solution in self.generation:
             proba = random()
@@ -163,43 +176,65 @@ class algorithme_genetique:
                 sequence = solution.get_solution()
                 point_mutation = randrange(len(sequence))
                 sequence[point_mutation] = 1-sequence[point_mutation]
+                vecteur = self.calculer_score(sequence)
                 solution.set_solution(sequence)
+                solution.set_score(vecteur.get_score())
     def get_optimal_solution(self):
+        
         if len(sys.argv) != 2:
             raise TypeError("Le nombre d'arguments n'est pas valide.")
             sys.exit(1)
+        
         filename = sys.argv[1]
         #génération de la première population
+        print("debut de l'algorithme génétique")
         self.init(filename)
         print("premiere génération créée")
         i=0
         while i<self.nb_generation:
+            print(i,"ème génération")
             self.tournamentSelection()
             enfants = self.croisement()
-            #self.mutation()
-            self.generation.extend(enfants)
+          
             self.solution = self.generation
             i+=1
+
         self.solution = sorted(self.solution, key=lambda x: x.get_score(),reverse=True)    
         self.solutionFinal = self.solution[0].get_solution()
         self.scoreFinal = self.solution[0].get_score()
-        #print(self.solution[0].get_score(),self.solution[0].get_solution())
+        print("score:",self.get_score_final())
+        print("solution:",self.traduire_solution())
 algo = algorithme_genetique()
 algo.get_optimal_solution()
-print("score:",algo.get_score_final)
-print("score:",algo.traduire_solution)
-"""algo = []
+while algo.get_score_final() < 1500:
+    algo = algorithme_genetique(algo.getMeileurSolution())
+    algo.get_optimal_solution()
+
+with open("resultats/genetique/elabore/resultat.txt", 'w') as fichier:
+    ingredient = algo.traduire_solution()
+    fichier.write(str(len(ingredient)))
+    fichier.write(" ")
+    for element in ingredient:
+        fichier.write(element + " ")
+"""
+algo = []
 thread = []
 for i in range(6):
     algo.append(algorithme_genetique())
     thread.append(threading.Thread(target=algo[i].get_optimal_solution))
-for i in range(6):
+for t in thread:
     print("thread",i,"lancé")
-    thread[i].start()
-    
+    t.start()   
 for t in thread:
     t.join()
-
+    print("fini")
 bestSolution =  sorted(algo, key=lambda x: x.get_score_final(),reverse=True)
-print(bestSolution[0].get_score_final(),bestSolution[0].traduire_solution())"""
+print(bestSolution[0].get_score_final(),bestSolution[0].traduire_solution())
 
+with open("resultats/genetique/difficile/resultat.txt", 'w') as fichier:
+    ingredient = bestSolution[0].traduire_solution()
+    fichier.write(str(len(ingredient)))
+    fichier.write(" ")
+    for element in ingredient:
+        fichier.write(element + " ")
+        """
