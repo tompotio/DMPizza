@@ -46,14 +46,15 @@ class algorithme_genetique:
         self.client = []
         self.nbclient = 0
         self.ingredients = {}
-        self.taille_population = 100
-        self.nb_generation = 100
+        self.taille_population = 180
+        self.nb_generation = 220
         self.nbTour = 5
         self.generation = []
-        self.nb_croisement = 200
+        self.nb_croisement = 250
         self.chance_mutation = 0.05
         self.solutionFinal = SolutionInitial
         self.scoreFinal = 0
+        self.scoreMax = 0
     def get_score_final(self):
         return self.scoreFinal
     def get_solution_final(self):
@@ -84,10 +85,12 @@ class algorithme_genetique:
                 self.client.append(client)
             self.traduire_aliment_client()
             self.taille_population = 150
-            self.nbSolutionInitial = 1000000 if len(self.ingredients) > 13 else pow(2,len(self.ingredients))
+            self.nbSolutionInitial = 10000 if len(self.ingredients) > 13 else pow(2,len(self.ingredients))
             self.nbClient = N
             self.generate_solution(self.nbSolutionInitial)
             self.solution = sorted(self.solution, key=lambda x: x.get_score(),reverse=True)[:250]
+            print(self.solution[0].get_score())
+            self.scoreMax = self.solution[0].get_score()
    
     def generate_solution(self,taille_population):
         neededDigits = len(self.ingredients)
@@ -144,7 +147,8 @@ class algorithme_genetique:
         populationSelection = sorted(populationSelection, key=lambda x: x.get_score(),reverse=True) # Trier en fonction du fitness
         a = populationSelection[:] # Faire une copie de la variable de sortie
         self.generation=a
-    def getMeileurSolution():
+        self.scoreMax = max(self.scoreMax,self.generation[0].get_score()) 
+    def getMeileurSolution(self):
         return self.solution[:50]
     def croisement(self):
         enfants = []
@@ -157,7 +161,7 @@ class algorithme_genetique:
     
             premiere_moitie_tab1 = parent1[:longueur_tab1 // 2]
             deuxieme_moitie_tab1 = parent1[longueur_tab1 // 2:]
-            premiere_moitie_tab2 = parent2[:longueur_tab2//2]
+            premiere_moitie_tab2 = parent2[:longueur_tab2 // 2]
             deuxieme_moitie_tab2 = parent2[longueur_tab2 // 2:]
             
 
@@ -169,6 +173,7 @@ class algorithme_genetique:
         self.generation.extend(enfants)
         self.mutation()
         self.generation = populationSelection = sorted(self.generation, key=lambda x: x.get_score(),reverse=True)
+        self.scoreMax = max(self.scoreMax,self.generation[0].get_score())
     def mutation(self):
         for solution in self.generation:
             proba = random()
@@ -191,23 +196,25 @@ class algorithme_genetique:
         self.init(filename)
         print("premiere génération créée")
         i=0
-        while i<self.nb_generation:
+        while i<self.nb_generation and self.solution[0].get_score() < 1500:
             print(i,"ème génération")
             self.tournamentSelection()
             enfants = self.croisement()
-          
-            self.solution = self.generation
+            self.solution = sorted(self.generation, key=lambda x:x.get_score(),reverse=True)
             i+=1
+
 
         self.solution = sorted(self.solution, key=lambda x: x.get_score(),reverse=True)    
         self.solutionFinal = self.solution[0].get_solution()
         self.scoreFinal = self.solution[0].get_score()
         print("score:",self.get_score_final())
         print("solution:",self.traduire_solution())
+        print("score_max:", self.scoreMax)
 algo = algorithme_genetique()
 algo.get_optimal_solution()
 while algo.get_score_final() < 1500:
-    algo = algorithme_genetique(algo.getMeileurSolution())
+    bestsolution = algo.getMeileurSolution()
+    algo = algorithme_genetique(bestsolution)
     algo.get_optimal_solution()
 
 with open("resultats/genetique/elabore/resultat.txt", 'w') as fichier:
